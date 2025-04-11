@@ -50,6 +50,15 @@ async def start(_, message: Message):
     )
     await message.reply_text("Welcome to Instagram Reel Downloader Bot!", reply_markup=buttons)
 
+@bot.on_callback_query()
+async def callback_handler(client, callback_query):
+    data = callback_query.data
+
+    if data == "about":
+        await callback_query.message.edit_text(about_text, reply_markup=callback_query.message.reply_markup)
+    elif data == "help":
+        await callback_query.message.edit_text(help_text, reply_markup=callback_query.message.reply_markup)
+
 @bot.on_message(filters.command("setlimit") & filters.user([123456789]))  # Replace with your Telegram user ID
 async def set_limit(_, message: Message):
     if len(message.command) < 3:
