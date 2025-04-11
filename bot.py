@@ -1,7 +1,6 @@
 import os
 import re
 import instaloader
-from instaloader import Profile
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from script import start_text, about_text, help_text
@@ -11,11 +10,23 @@ API_HASH = os.environ.get("API_HASH")
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 bot = Client("insta_reel_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-loader = instaloader.Instaloader(save_metadata=False, download_comments=False, post_metadata_txt_pattern='')
+
+# Instaloader setup
+loader = instaloader.Instaloader(
+    save_metadata=False,
+    download_comments=False,
+    post_metadata_txt_pattern=''
+)
+# Load saved session (you must login once using instaloader CLI)
+loader.load_session_from_file("your_username")  # replace with your IG username
 
 def extract_shortcode(link):
     match = re.search(r"instagram\.com/reel/([^/?\s]+)", link)
     return match.group(1) if match else None
+
+def extract_username(text):
+    match = re.search(r"instagram\.com/([^/?\s]+)", text)
+    return match.group(1) if match else text.replace("@", "").strip()
 
 @bot.on_message(filters.command("start"))
 async def start(_, message: Message):
@@ -41,54 +52,51 @@ async def callback_handler(client, callback_query):
         await callback_query.message.edit_text(help_text, reply_markup=callback_query.message.reply_markup)
 
 @bot.on_message(filters.text & ~filters.command(["start"]))
-async def reel_or_username_handler(_, message: Message):
+async def reel_downloader(_, message: Message):
     text = message.text.strip()
 
-    # Single reel link
+    # Single reel URL
     if "instagram.com/reel/" in text:
         shortcode = extract_shortcode(text)
         if not shortcode:
             return await message.reply_text("❌ Invalid Instagram Reel URL.")
-
+        
         msg = await message.reply_text("⏳ Downloading reel...")
-
         try:
             post = instaloader.Post.from_shortcode(loader.context, shortcode)
             video_url = post.video_url
-
             await message.reply_video(video=video_url, caption=post.caption or "Instagram Reel")
+        except Exception as e:
+            print("Error:", e)
+            await message.reply_text("⚠️ Failed to fetch reel. Make sure it's *public*.")
+        await msg.delete()
+    
+    # Username bulk download
+    elif "instagram.com/" in text or text.startswith("@") or len(text) < 30:
+        username = extract_username(text)
+        msg = await message.reply_text(f"⏳ Fetching reels of `{username}`...")
+
+        try:
+            profile = instaloader.Profile.from_username(loader.context, username)
+            count = 0
+
+            for post in profile.get_posts():
+                if post.typename == "GraphVideo":
+                    await message.reply_video(video=post.video_url, caption=post.caption or "Instagram Reel")
+                    count += 1
+                    if count >= 5:  # Limit to 5 reels max
+                        break
+
+            if count == 0:
+                await message.reply_text("❌ No reels found.")
+            else:
+                await msg.edit(f"✅ Sent {count} reel(s) from `{username}`.")
 
         except Exception as e:
             print("Error:", e)
-            await msg.edit("⚠️ Failed to fetch reel. Make sure it's *public*.")
+            await msg.edit("⚠️ Failed to fetch reels. Make sure the profile is *public*.")
 
-        await msg.delete()
-        return
-
-    # Username based reels
-    username = text.replace("https://instagram.com/", "").replace("@", "").strip()
-    msg = await message.reply_text(f"🔍 Fetching reels from @{username}...")
-
-    try:
-        profile = Profile.from_username(loader.context, username)
-        posts = profile.get_posts()
-
-        count = 0
-        for post in posts:
-            if not post.is_video:
-                continue
-            count += 1
-            await message.reply_video(video=post.video_url, caption=post.caption or f"Reel from @{username}")
-            if count >= 5:
-                break
-
-        if count == 0:
-            await msg.edit("❌ No reels found or all are private.")
-        else:
-            await msg.delete()
-
-    except Exception as e:
-        print("Error:", e)
-        await msg.edit("⚠️ Failed to fetch reels. Make sure the username is valid and the account is public.")
+    else:
+        await message.reply_text("❌ Send a valid Instagram reel link or username.")
 
 bot.run()
