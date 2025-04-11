@@ -13,7 +13,7 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 bot = Client("insta_reel_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # MongoDB setup (direct in code as requested)
-mongo = pymongo.MongoClient("mongodb+srv://<username>:<password>@cluster.mongodb.net/?retryWrites=true&w=majority")
+mongo = pymongo.MongoClient("mongodb+srv://botno1:renamebot@cluster0.mscve.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = mongo["reel_bot"]
 limits = db["limits"]
 
