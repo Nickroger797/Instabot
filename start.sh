@@ -1,7 +1,12 @@
 #!/bin/bash
 
-# Login to Instagram (Not recommended every time)
-python3 login.py
+# Check if session file exists before login
+if [ ! -f "session-codexbots" ]; then
+  echo "[!] Session not found, logging in..."
+  python3 login.py
+else
+  echo "[✓] Session found, skipping login."
+fi
 
 # Start Flask server in background
 python3 server.py &
