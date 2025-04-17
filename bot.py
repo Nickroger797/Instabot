@@ -18,10 +18,7 @@ mongo = pymongo.MongoClient("mongodb+srv://botno1:renamebot@cluster0.mscve.mongo
 db = mongo["reel_bot"]
 limits = db["limits"]
 
-# Instaloader setup
-loader = instaloader.Instaloader(save_metadata=False, download_comments=False, post_metadata_txt_pattern='')
-# Correct way
-loader.load_session_from_file("codexbots")
+from login import INSTALOADER as loader
 
 def extract_shortcode(link):
     match = re.search(r"instagram\.com/reel/([^/?\s]+)", link)
