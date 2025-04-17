@@ -20,7 +20,7 @@ limits = db["limits"]
 
 # Instaloader setup
 loader = instaloader.Instaloader(save_metadata=False, download_comments=False, post_metadata_txt_pattern='')
-loader.load_session_from_file("codexbots")  # Replace with your IG username
+loader.load_session_from_file("session-codexbots")
 
 def extract_shortcode(link):
     match = re.search(r"instagram\.com/reel/([^/?\s]+)", link)
